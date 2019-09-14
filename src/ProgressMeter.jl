@@ -47,6 +47,17 @@ function BarGlyphs(s::AbstractString)
     return BarGlyphs(glyphs...)
 end
 
+is_in_ci() = lowercase(get(ENV, "CI", "false")) == "true"
+# Many CI services set environment variable `CI` to `true`:
+# https://docs.travis-ci.com/user/environment-variables/#default-environment-variables
+# https://www.appveyor.com/docs/environment-variables/
+# https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+
+default_dt() = is_in_ci() ? 60 * 9.0 : 0.1
+# Use interval of 9 minute in CI to avoid build timeout in Travis
+# (which defaults to 10 minutes):
+# https://docs.travis-ci.com/user/customizing-the-build/#build-timeouts
+
 """
 `prog = Progress(n; dt=0.1, desc="Progress: ", color=:green,
 output=stderr, barlen=tty_width(desc))` creates a progress meter for a
@@ -71,7 +82,7 @@ mutable struct Progress <: AbstractProgress
     numprintedvalues::Int   # num values printed below progress in last iteration
 
     function Progress(n::Integer;
-                      dt::Real=0.1,
+                      dt::Real=default_dt(),
                       desc::AbstractString="Progress: ",
                       color::Symbol=:green,
                       output::IO=stderr,
@@ -118,7 +129,7 @@ mutable struct ProgressThresh{T<:Real} <: AbstractProgress
     offset::Int             # position offset of progress bar (default is 0)
 
     function ProgressThresh{T}(thresh;
-                               dt::Real=0.1,
+                               dt::Real=default_dt(),
                                desc::AbstractString="Progress: ",
                                color::Symbol=:green,
                                output::IO=stderr,
@@ -129,7 +140,7 @@ mutable struct ProgressThresh{T<:Real} <: AbstractProgress
     end
 end
 
-ProgressThresh(thresh::Real, dt::Real=0.1, desc::AbstractString="Progress: ",
+ProgressThresh(thresh::Real, dt::Real=default_dt(), desc::AbstractString="Progress: ",
          color::Symbol=:green, output::IO=stderr;
          offset::Integer=0) =
     ProgressThresh{typeof(thresh)}(thresh, dt=dt, desc=desc, color=color, output=output, offset=offset)
@@ -158,7 +169,7 @@ mutable struct ProgressUnknown <: AbstractProgress
     numprintedvalues::Int   # num values printed below progress in last iteration
 end
 
-function ProgressUnknown(;dt::Real=0.1, desc::AbstractString="Progress: ", color::Symbol=:green, output::IO=stderr)
+function ProgressUnknown(;dt::Real=default_dt(), desc::AbstractString="Progress: ", color::Symbol=:green, output::IO=stderr)
     tfirst = tlast = time()
     printed = false
     ProgressUnknown(false, dt, 0, false, tfirst, tlast, printed, desc, color, output, 0)

@@ -1,6 +1,8 @@
 import ProgressMeter
 using Test
 
+ENV["CI"] = "false"
+
 include("core.jl")
 include("test.jl")
 include("test_showvalues.jl")
